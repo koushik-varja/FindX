@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+pythonpath=["."]
+testpaths=["tests"]
+asyncio_mode="auto"
+markers=[
+  "full_ml: requires real SentenceTransformer/OpenCLIP full-mode dependencies and model weights",
+  "slow: opt-in test that loads heavyweight ML models",
+]
+[tool.ruff]
+line-length=140
+exclude=["backend/alembic/versions"]
+[tool.ruff.lint]
+select=["E9","F63","F7","F82"]

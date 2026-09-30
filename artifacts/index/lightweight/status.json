@@ -1,0 +1,19 @@
+{
+  "runtime_label": "LIGHTWEIGHT",
+  "mode": "lightweight",
+  "index_version": "lightweight-82-1ec9a7063fbb",
+  "indexed_products": 82,
+  "lexical_index": "custom-bm25-v1",
+  "dense_model": "lsi-tfidf-svd-v1",
+  "visual_model": "lightweight-visual-v1",
+  "text_vector_index": "random-hyperplane-ann-v1",
+  "image_vector_index": "random-hyperplane-ann-v1",
+  "text_embedding_dimension": 48,
+  "image_embedding_dimension": 124,
+  "loaded_from_persisted_index": false,
+  "last_rebuild_at": "2026-09-08T09:47:36.794594+00:00",
+  "startup_seconds": 0.808,
+  "numeric_vector_bytes": 56416,
+  "wall_seconds": 0.808,
+  "catalog_hash": "1ec9a7063fbb704b64f7b21bc84549a84fc9abad625ad4b710c4da6336a0378a"
+}

@@ -1,0 +1,12 @@
+{"query_product_id": "SHO-001", "relevant_product_ids": ["SHO-003", "SHO-007", "SHO-018"], "label_rule": "black mesh running shoes"}
+{"query_product_id": "SHO-002", "relevant_product_ids": ["SHO-008", "SHO-017"], "label_rule": "blue mesh running shoes"}
+{"query_product_id": "APP-002", "relevant_product_ids": ["APP-017"], "label_rule": "black kurti"}
+{"query_product_id": "APP-008", "relevant_product_ids": ["APP-009", "APP-018"], "label_rule": "polyester sports t-shirt"}
+{"query_product_id": "ELE-001", "relevant_product_ids": ["ELE-003"], "label_rule": "black wireless earbuds"}
+{"query_product_id": "ELE-007", "relevant_product_ids": ["ELE-008", "ELE-009"], "label_rule": "wireless headphones"}
+{"query_product_id": "BAG-001", "relevant_product_ids": ["BAG-002", "BAG-003", "BAG-004"], "label_rule": "polyester backpack"}
+{"query_product_id": "BAG-007", "relevant_product_ids": ["BAG-008"], "label_rule": "black polyester duffel"}
+{"query_product_id": "WAT-003", "relevant_product_ids": ["WAT-005", "WAT-010"], "label_rule": "black smartwatch"}
+{"query_product_id": "WAT-001", "relevant_product_ids": ["WAT-002", "WAT-009"], "label_rule": "metal analog watch"}
+{"query_product_id": "HOM-001", "relevant_product_ids": ["HOM-002"], "label_rule": "desk lamp"}
+{"query_product_id": "HOM-005", "relevant_product_ids": ["HOM-006"], "label_rule": "electric kettle"}

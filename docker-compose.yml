@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - findx_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        FINDX_INSTALL_FULL: ${FINDX_INSTALL_FULL}
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      FINDX_MODE: ${FINDX_MODE}
+      ADMIN_KEY: ${ADMIN_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      FINDX_MM_VISUAL_WEIGHT: ${FINDX_MM_VISUAL_WEIGHT}
+      FINDX_MM_TEXT_WEIGHT: ${FINDX_MM_TEXT_WEIGHT}
+      FINDX_MM_CROSSMODAL_WEIGHT: ${FINDX_MM_CROSSMODAL_WEIGHT}
+      FINDX_MM_ATTRIBUTE_WEIGHT: ${FINDX_MM_ATTRIBUTE_WEIGHT}
+      SENTENCE_TRANSFORMERS_HOME: /root/.cache/huggingface/sentence-transformers
+      OPENCLIP_CACHE_DIR: /root/.cache/open_clip
+      FINDX_DEVICE: ${FINDX_DEVICE}
+    command:
+      - sh
+      - -c
+      - >-
+        alembic -c backend/alembic.ini upgrade head &&
+        python scripts/seed_db.py &&
+        uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - findx_hf_cache:/root/.cache/huggingface
+      - findx_openclip_cache:/root/.cache/open_clip
+      - findx_indexes:/app/artifacts/index/full
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health',timeout=2)"]
+      interval: 8s
+      timeout: 4s
+      retries: 30
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+volumes:
+  findx_pg: {}
+  findx_hf_cache: {}
+  findx_openclip_cache: {}
+  findx_indexes: {}

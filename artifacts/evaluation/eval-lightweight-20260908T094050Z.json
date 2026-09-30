@@ -1,0 +1,60 @@
+{
+  "label_origin": "curated deterministic demo relevance labels authored for this repository; not a user study",
+  "queries": 60,
+  "k": 10,
+  "runtime_mode": "lightweight",
+  "modes": {
+    "bm25": {
+      "recall_at_k": 0.9778,
+      "mrr": 0.9639,
+      "ndcg_at_k": 0.9293,
+      "latency_ms_p50": 2.338,
+      "latency_ms_p95": 9.358
+    },
+    "dense": {
+      "recall_at_k": 0.9856,
+      "mrr": 0.9778,
+      "ndcg_at_k": 0.93,
+      "latency_ms_p50": 2.018,
+      "latency_ms_p95": 9.939
+    },
+    "hybrid": {
+      "recall_at_k": 0.9889,
+      "mrr": 0.9708,
+      "ndcg_at_k": 0.9294,
+      "latency_ms_p50": 1.965,
+      "latency_ms_p95": 8.01
+    },
+    "reranked": {
+      "recall_at_k": 0.9889,
+      "mrr": 0.9917,
+      "ndcg_at_k": 0.9519,
+      "latency_ms_p50": 2.321,
+      "latency_ms_p95": 6.785
+    }
+  },
+  "generated_at": "2026-09-08T09:40:50.407012+00:00",
+  "index": {
+    "runtime_label": "LIGHTWEIGHT",
+    "mode": "lightweight",
+    "index_version": "lightweight-82-1ec9a7063fbb",
+    "indexed_products": 82,
+    "lexical_index": "custom-bm25-v1",
+    "dense_model": "lsi-tfidf-svd-v1",
+    "visual_model": "lightweight-visual-v1",
+    "text_vector_index": "random-hyperplane-ann-v1",
+    "image_vector_index": "random-hyperplane-ann-v1",
+    "text_embedding_dimension": 48,
+    "image_embedding_dimension": 124,
+    "loaded_from_persisted_index": false,
+    "last_rebuild_at": "2026-09-08T09:40:49.522394+00:00",
+    "startup_seconds": 0.781,
+    "numeric_vector_bytes": 56416
+  },
+  "image_retrieval": {
+    "metric": "Recall@5",
+    "value": 0.5694,
+    "queries": 12,
+    "label_origin": "repository-authored same-category/style-proxy product pairs; query product itself is excluded"
+  }
+}

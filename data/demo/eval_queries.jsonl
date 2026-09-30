@@ -1,0 +1,60 @@
+{"query": "black running shoes under 3000", "type": "attribute", "relevance": {"SHO-001": 3, "SHO-005": 2, "SHO-007": 2, "SHO-018": 2}}
+{"query": "3k ke andar black running shoe", "type": "hinglish", "relevance": {"SHO-001": 3, "SHO-005": 2, "SHO-007": 2, "SHO-018": 2}}
+{"query": "काले रनिंग जूते", "type": "hindi", "relevance": {"SHO-001": 3, "SHO-003": 2, "SHO-005": 2, "SHO-007": 2, "SHO-018": 2}}
+{"query": "samsoong wirless earbuds", "type": "typo", "relevance": {"ELE-001": 3, "ELE-002": 2}}
+{"query": "samsung earbuds below 2500", "type": "attribute", "relevance": {"ELE-002": 3}}
+{"query": "comfortable shoes for long distance running", "type": "semantic", "relevance": {"SHO-004": 3, "SHO-001": 2, "SHO-008": 2}}
+{"query": "blue kurti cotton under 1500", "type": "attribute", "relevance": {"APP-001": 3, "APP-004": 2}}
+{"query": "कॉटन कुर्ती नीली", "type": "hindi", "relevance": {"APP-001": 3, "APP-004": 2}}
+{"query": "black cotton kurti", "type": "exact", "relevance": {"APP-002": 3}}
+{"query": "cheap wireless earbuds under 1500", "type": "price", "relevance": {"ELE-003": 3}}
+{"query": "wireless earbuds with clear calls", "type": "semantic", "relevance": {"ELE-002": 3, "ELE-005": 2}}
+{"query": "jbl wireless earbuds", "type": "exact", "relevance": {"ELE-004": 3}}
+{"query": "bluetooth headphones under 3000", "type": "attribute", "relevance": {"ELE-008": 3, "ELE-009": 2}}
+{"query": "sony wireless headphones", "type": "exact", "relevance": {"ELE-007": 3}}
+{"query": "laptop backpack blue", "type": "attribute", "relevance": {"BAG-002": 3, "BAG-003": 2}}
+{"query": "college bag under 2000", "type": "semantic", "relevance": {"BAG-003": 3, "BAG-001": 2}}
+{"query": "black gym duffel", "type": "attribute", "relevance": {"BAG-007": 3, "BAG-008": 2}}
+{"query": "women beige tote bag", "type": "attribute", "relevance": {"BAG-006": 3}}
+{"query": "smartwatch under 2000 black", "type": "attribute", "relevance": {"WAT-005": 3, "WAT-003": 2, "WAT-010": 2}}
+{"query": "fitness watch with heart rate", "type": "semantic", "relevance": {"WAT-004": 3, "WAT-010": 2}}
+{"query": "casio black analog watch", "type": "exact", "relevance": {"WAT-001": 3}}
+{"query": "classic silver formal watch", "type": "semantic", "relevance": {"WAT-002": 3, "WAT-008": 2}}
+{"query": "desk lamp under 1500", "type": "price", "relevance": {"HOM-002": 3, "HOM-001": 2}}
+{"query": "study lamp black", "type": "attribute", "relevance": {"HOM-002": 3}}
+{"query": "steel water bottle under 1000", "type": "attribute", "relevance": {"HOM-003": 3}}
+{"query": "electric kettle below 1200", "type": "price", "relevance": {"HOM-006": 3}}
+{"query": "memory foam neck support pillow", "type": "semantic", "relevance": {"HOM-007": 3}}
+{"query": "blue cotton bedsheet", "type": "attribute", "relevance": {"HOM-008": 3}}
+{"query": "black sports tshirt", "type": "attribute", "relevance": {"APP-009": 3, "APP-006": 2}}
+{"query": "quick dry gym t shirt", "type": "semantic", "relevance": {"APP-008": 3, "APP-009": 2, "APP-018": 2}}
+{"query": "white formal shirt", "type": "attribute", "relevance": {"APP-011": 3}}
+{"query": "grey hoodie under 2000", "type": "attribute", "relevance": {"APP-012": 3}}
+{"query": "black zip hoodie", "type": "exact", "relevance": {"APP-013": 3}}
+{"query": "blue slim jeans men", "type": "attribute", "relevance": {"APP-014": 3}}
+{"query": "women blue jeans", "type": "attribute", "relevance": {"APP-015": 3}}
+{"query": "trail running green shoes", "type": "attribute", "relevance": {"SHO-014": 3}}
+{"query": "white casual sneakers", "type": "attribute", "relevance": {"SHO-009": 3, "SHO-010": 2}}
+{"query": "walking shoes for long standing", "type": "semantic", "relevance": {"SHO-012": 3, "SHO-011": 2}}
+{"query": "budget black sports shoes", "type": "semantic", "relevance": {"SHO-018": 3, "SHO-005": 2}}
+{"query": "puma blue running shoes", "type": "attribute", "relevance": {"SHO-002": 3}}
+{"query": "adidas blue running shoes under 3000", "type": "attribute", "relevance": {"SHO-017": 3}}
+{"query": "wireless mouse under 1200", "type": "price", "relevance": {"ELE-011": 3}}
+{"query": "silent bluetooth mouse", "type": "semantic", "relevance": {"ELE-010": 3}}
+{"query": "portable ssd samsung", "type": "exact", "relevance": {"ELE-012": 3}}
+{"query": "usb c fast charger", "type": "semantic", "relevance": {"ELE-014": 3}}
+{"query": "20000mah power bank black", "type": "exact", "relevance": {"ELE-015": 3}}
+{"query": "bluetooth multi device keyboard", "type": "semantic", "relevance": {"ELE-016": 3}}
+{"query": "brown laptop messenger bag", "type": "exact", "relevance": {"BAG-010": 3}}
+{"query": "small green sling bag", "type": "attribute", "relevance": {"BAG-009": 3}}
+{"query": "retro digital silver watch", "type": "semantic", "relevance": {"WAT-008": 3}}
+{"query": "women gold elegant watch", "type": "attribute", "relevance": {"WAT-009": 3}}
+{"query": "₹2500 ke andar smartwatch", "type": "hinglish", "relevance": {"WAT-003": 3, "WAT-004": 2, "WAT-005": 2, "WAT-006": 2, "WAT-010": 2}}
+{"query": "black earbuds 3k ke andar", "type": "hinglish", "relevance": {"ELE-001": 3, "ELE-003": 2}}
+{"query": "नीले वायरलेस ईयरबड्स", "type": "hindi", "relevance": {"ELE-004": 3}}
+{"query": "ब्लैक बैकपैक लैपटॉप", "type": "hindi", "relevance": {"BAG-001": 3}}
+{"query": "samung buds", "type": "typo", "relevance": {"ELE-001": 3, "ELE-002": 2}}
+{"query": "wirless hedphones black", "type": "typo", "relevance": {"ELE-008": 3, "ELE-009": 2}}
+{"query": "addidas runing shoe blue", "type": "typo", "relevance": {"SHO-017": 3}}
+{"query": "nik running shoe under 3000", "type": "typo", "relevance": {"SHO-001": 3, "SHO-008": 2, "SHO-015": 2}}
+{"query": "cotn kurti under 1500", "type": "typo", "relevance": {"APP-001": 3, "APP-002": 2, "APP-004": 2, "APP-016": 2}}
