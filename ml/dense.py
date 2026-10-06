@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+
 import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -50,8 +51,16 @@ class LSIDenseRetriever:
         vector = self.svd.transform(matrix)
         return self.normalizer.transform(vector).astype(np.float32)[0]
 
+    def search_vector(self, vector: np.ndarray, k: int = 20):
+        return self.ann.search(vector, k)
+
+    def exact_search_vector(self, vector: np.ndarray, k: int = 20):
+        scores = self.vectors @ np.asarray(vector, dtype=np.float32).reshape(-1)
+        order = np.argsort(-scores)[:k]
+        return [(int(idx), float(scores[idx])) for idx in order]
+
     def topk(self, query: str, k: int = 20):
-        return self.ann.search(self.encode_query(query), k)
+        return self.search_vector(self.encode_query(query), k)
 
 
 class SentenceTransformerDenseRetriever:
@@ -114,8 +123,16 @@ class SentenceTransformerDenseRetriever:
             dtype=np.float32,
         )
 
+    def search_vector(self, vector: np.ndarray, k: int = 20):
+        return self.ann.search(vector, k)
+
+    def exact_search_vector(self, vector: np.ndarray, k: int = 20):
+        scores = self.vectors @ np.asarray(vector, dtype=np.float32).reshape(-1)
+        order = np.argsort(-scores)[:k]
+        return [(int(idx), float(scores[idx])) for idx in order]
+
     def topk(self, query: str, k: int = 20):
-        return self.ann.search(self.encode_query(query), k)
+        return self.search_vector(self.encode_query(query), k)
 
     def save(self, directory: Path) -> dict:
         directory.mkdir(parents=True, exist_ok=True)

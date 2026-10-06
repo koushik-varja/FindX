@@ -1,0 +1,8 @@
+{
+  "comfortable shoes for long distance running": "This is intentionally paraphrastic. Dense retrieval should have an opportunity to help because the wording need not exactly match a title; if BM25 wins, inspect descriptive terms already present in the catalog.",
+  "portable ssd samsung": "This query contains an exact product type and brand. Strong BM25 performance is expected and is not a failure of semantic retrieval.",
+  "samsoong wirless earbuds": "This case exercises deterministic typo recovery before retrieval, so improvements here should not be attributed only to the embedding model.",
+  "काले रनिंग जूते": "Hindi handling combines a bounded rewrite table with multilingual retrieval; the benchmark should not generalize this result to unrestricted Hindi.",
+  "నల్ల రన్నింగ్ షూస్": "FindX has no Telugu rewrite dictionary. This query is retained specifically to measure how much the multilingual encoder and corpus can do without language-specific normalization.",
+  "వైర్‌లెస్ ఇయర్‌బడ్స్": "Telugu is an evaluation slice, not a guaranteed feature. A miss should be reported rather than hidden by aggregate English performance."
+}
