@@ -23,10 +23,21 @@ def test_dense(engine):
 
 
 def test_hybrid_and_reranker_price(engine):
-    result = engine.search_text("black running shoes under 3000", k=10, mode="reranked")
+    result = engine.search_text("black running shoes under 3000", k=10, mode="reranked", debug=True)
     assert result["results"]
     assert all(row["price"] <= 3000 for row in result["results"])
     assert result["results"][0]["debug"]["rerank_score"] is not None
+    assert result["timings_ms"]["dense_embedding"] >= 0
+    assert result["timings_ms"]["dense_retrieval"] >= 0
+
+
+def test_debug_metadata_is_opt_in(engine):
+    normal = engine.search_text("wireless earbuds", k=3, mode="reranked", debug=False)
+    debug = engine.search_text("wireless earbuds", k=3, mode="reranked", debug=True)
+    assert "timings_ms" not in normal
+    assert "debug" not in normal["results"][0]
+    assert "timings_ms" in debug
+    assert "bm25_rank" in debug["results"][0]["debug"]
 
 
 def test_typo_recovery(engine):
@@ -43,7 +54,7 @@ def test_hinglish_and_hindi(engine):
 
 
 def test_search_lab(engine):
-    lab = engine.search_lab("wireless earbuds", 3)
+    lab = engine.search_lab("wireless earbuds", 3, debug=True)
     assert set(lab) == {"bm25", "dense", "hybrid", "reranked"}
     assert all(payload["results"] for payload in lab.values())
 

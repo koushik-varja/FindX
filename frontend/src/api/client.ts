@@ -14,30 +14,31 @@ async function parse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function textSearch(query: string): Promise<SearchPayload> {
+export async function textSearch(query: string, debug = false): Promise<SearchPayload> {
   return parse(
     await fetch(`${API}/api/search/text`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, k: 12, mode: "reranked", debug: true }),
+      body: JSON.stringify({ query, k: 12, mode: "reranked", debug }),
     }),
   );
 }
 
-export async function searchLab(query: string): Promise<SearchLabPayload> {
+export async function searchLab(query: string, debug = true): Promise<SearchLabPayload> {
   return parse(
     await fetch(`${API}/api/search/lab`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, k: 6 }),
+      body: JSON.stringify({ query, k: 6, debug }),
     }),
   );
 }
 
-export async function imageSearch(file: File, text = "", k = 12): Promise<SearchPayload> {
+export async function imageSearch(file: File, text = "", k = 12, debug = false): Promise<SearchPayload> {
   const form = new FormData();
   form.append("file", file);
   form.append("k", String(k));
+  form.append("debug", debug ? "true" : "false");
   if (text) {
     form.append("text", text);
   }

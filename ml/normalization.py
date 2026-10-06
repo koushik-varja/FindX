@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 import re
+import unicodedata
 
 HINDI_MAP = {
     "काले":"black", "काला":"black", "ब्लैक":"black", "नीले":"blue", "नीली":"blue", "नीला":"blue",
@@ -29,7 +30,6 @@ class NormalizedQuery:
     corrected: str
     corrections: dict[str,str]
     correction_confidence: float
-
 class QueryNormalizer:
     def __init__(self, vocabulary: set[str] | None = None):
         self.vocabulary = {v.lower() for v in (vocabulary or set()) if len(v) > 2}
@@ -39,7 +39,28 @@ class QueryNormalizer:
     def _price_k(text: str) -> str:
         def repl(m: re.Match[str]) -> str:
             return str(int(float(m.group(1)) * 1000))
+
         return re.sub(r"(?<!\w)(\d+(?:\.\d+)?)\s*k\b", repl, text, flags=re.I)
+
+    @staticmethod
+    def _clean_unicode(text: str) -> str:
+        cleaned = []
+
+        for char in text:
+            category = unicodedata.category(char)
+
+            if (
+                char.isspace()
+                or char in {"-", "₹", "."}
+                or category.startswith("L")
+                or category.startswith("N")
+                or category.startswith("M")
+            ):
+                cleaned.append(char)
+            else:
+                cleaned.append(" ")
+
+        return re.sub(r"\s+", " ", "".join(cleaned)).strip()
 
     def normalize(self, query: str) -> NormalizedQuery:
         original = query.strip()
@@ -47,8 +68,7 @@ class QueryNormalizer:
         for hi,en in HINDI_MAP.items(): text = text.replace(hi,en)
         for src,dst in HINGLISH_PHRASES.items(): text = re.sub(rf"\b{re.escape(src)}\b", dst, text)
         text = self._price_k(text)
-        text = re.sub(r"[^\w\-₹.]+", " ", text, flags=re.UNICODE)
-        text = re.sub(r"\s+", " ", text).strip()
+        text = self._clean_unicode(text)
         tokens = text.split()
         out=[]; corrections={}; confs=[]
         for token in tokens:

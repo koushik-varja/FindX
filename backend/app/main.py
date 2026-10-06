@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     await app.state.cache.close()
 
 
-app = FastAPI(title="FindX API", version="1.1.0", lifespan=lifespan)
+app = FastAPI(title="FindX API", version="1.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -47,7 +47,9 @@ app.mount(
 
 
 def _cache_key(req: TextSearchRequest):
-    return "search:" + hashlib.sha256(f"{settings.search_mode}|{req.query}|{req.k}|{req.mode}".encode()).hexdigest()
+    return "search:" + hashlib.sha256(
+        f"{settings.search_mode}|{req.query}|{req.k}|{req.mode}".encode()
+    ).hexdigest()
 
 
 def _open_image(raw: bytes):
@@ -89,6 +91,10 @@ def _persist_search(db: Session | None, payload: dict):
         db.rollback()
 
 
+def _debug_allowed(requested: bool) -> bool:
+    return bool(requested and settings.expose_debug)
+
+
 @app.get("/api/health")
 async def health():
     return {
@@ -100,35 +106,57 @@ async def health():
 
 @app.post("/api/search/text")
 async def search_text(req: TextSearchRequest, db: Session = Depends(get_db)):
-    key = _cache_key(req)
-    cached = await app.state.cache.get(key)
-    if cached:
-        cached["cache_hit"] = True
-        return cached
-    output = app.state.search.search_text(req.query, req.k, req.mode, req.debug)
+    debug = _debug_allowed(req.debug)
+    # Debug payloads contain stage/rank internals and are intentionally not cached.
+    if not debug:
+        key = _cache_key(req)
+        cached = await app.state.cache.get(key)
+        if cached:
+            cached["cache_hit"] = True
+            return cached
+    output = app.state.search.search_text(req.query, req.k, req.mode, debug)
     output["cache_hit"] = False
-    await app.state.cache.set(key, output)
+    if not debug:
+        await app.state.cache.set(_cache_key(req), output)
     _persist_search(db, output)
     return output
 
 
 @app.post("/api/search/lab")
 async def search_lab(req: SearchLabRequest):
-    return app.state.search.search_lab(req.query, req.k)
+    return app.state.search.search_lab(req.query, req.k, _debug_allowed(req.debug))
 
 
 @app.post("/api/search/image")
-async def search_image(file: UploadFile = File(...), k: int = Form(12)):
+async def search_image(
+    file: UploadFile = File(...),
+    k: int = Form(12),
+    debug: bool = Form(False),
+):
     if k < 1 or k > 50:
         raise HTTPException(422, "k must be between 1 and 50")
-    return app.state.search.search_image(_open_image(await file.read()), k)
+    return app.state.search.search_image(
+        _open_image(await file.read()),
+        k,
+        _debug_allowed(debug),
+    )
 
 
 @app.post("/api/search/multimodal")
-async def search_multimodal(file: UploadFile = File(...), text: str = Form(""), k: int = Form(12)):
+async def search_multimodal(
+    file: UploadFile = File(...),
+    text: str = Form(""),
+    k: int = Form(12),
+    debug: bool = Form(False),
+):
     if k < 1 or k > 50:
         raise HTTPException(422, "k must be between 1 and 50")
-    return app.state.search.search_multimodal(_open_image(await file.read()), text, k)
+    return app.state.search.search_multimodal(
+        _open_image(await file.read()),
+        text,
+        k,
+        _debug_allowed(debug),
+    )
 
 
 @app.get("/api/products/{product_id}")
@@ -141,6 +169,8 @@ async def product(product_id: str):
 
 @app.get("/api/search/debug/{query_id}")
 async def debug_query(query_id: str):
+    if not settings.expose_debug:
+        raise HTTPException(404, "Debug endpoint disabled")
     payload = app.state.search.debug.get(query_id)
     if not payload:
         raise HTTPException(404, "Debug record not found in this process")

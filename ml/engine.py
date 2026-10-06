@@ -166,43 +166,90 @@ class SearchEngine:
 
         self.build_seconds = time.perf_counter() - started
 
+    @staticmethod
+    def _rank_map(rows: list[tuple[int, float]]) -> dict[int, int]:
+        return {idx: rank for rank, (idx, _score) in enumerate(rows, 1)}
+
+    @staticmethod
+    def _elapsed_ms(started: float) -> float:
+        return round((time.perf_counter() - started) * 1000, 4)
+
     def _pack(
         self,
         idx,
         rank,
         score,
         result_mode,
+        *,
+        include_debug: bool = False,
         bm=0.0,
         dense=0.0,
         rerank_score=None,
         matched=None,
         reason=None,
+        debug_extra: dict | None = None,
     ):
         product = dict(self.products[idx])
         product["rank"] = rank
         product["score"] = round(float(score), 6)
         product["mode"] = result_mode
-        product["debug"] = {
-            "lexical_score": round(float(bm), 6),
-            "semantic_score": round(float(dense), 6),
-            "rerank_score": None if rerank_score is None else round(float(rerank_score), 6),
-            "matched_attributes": matched or [],
-            "reason": reason or "",
-        }
+        if include_debug:
+            product["debug"] = {
+                "lexical_score": round(float(bm), 6),
+                "semantic_score": round(float(dense), 6),
+                "rerank_score": None if rerank_score is None else round(float(rerank_score), 6),
+                "matched_attributes": matched or [],
+                "reason": reason or "",
+                **(debug_extra or {}),
+            }
         return product
 
     def search_text(self, query: str, k: int = 12, mode: str = "reranked", debug: bool = False):
-        del debug
+        total_started = time.perf_counter()
+        timings: dict[str, float] = {}
+
         started = time.perf_counter()
         normalized = self.normalizer.normalize(query)
         attributes = parse_attributes(normalized.corrected)
-        bm25_list = self.bm25.topk(normalized.corrected, min(60, len(self.products)))
-        bm25_scores = dict(bm25_list)
-        dense_list, ann_fallback = self.dense.topk(normalized.corrected, min(60, len(self.products)))
-        dense_scores = dict(dense_list)
-        fused = reciprocal_rank_fusion([bm25_list, dense_list])
-        fused_list = sort_fused(fused, min(60, len(self.products)))
+        timings["preprocessing"] = self._elapsed_ms(started)
 
+        candidate_k = min(60, len(self.products))
+        started = time.perf_counter()
+        bm25_list = self.bm25.topk(normalized.corrected, candidate_k)
+        timings["bm25"] = self._elapsed_ms(started)
+        bm25_scores = dict(bm25_list)
+
+        started = time.perf_counter()
+        query_vector = self.dense.encode_query(normalized.corrected)
+        timings["dense_embedding"] = self._elapsed_ms(started)
+
+        started = time.perf_counter()
+        dense_list, ann_fallback = self.dense.search_vector(query_vector, candidate_k)
+        timings["dense_retrieval"] = self._elapsed_ms(started)
+        dense_scores = dict(dense_list)
+
+        started = time.perf_counter()
+        fused = reciprocal_rank_fusion([bm25_list, dense_list])
+        fused_list = sort_fused(fused, candidate_k)
+        timings["fusion"] = self._elapsed_ms(started)
+
+        bm25_ranks = self._rank_map(bm25_list)
+        dense_ranks = self._rank_map(dense_list)
+        hybrid_ranks = self._rank_map(fused_list)
+
+        def extra(idx: int, final_rank: int, parts: dict | None = None) -> dict:
+            payload = {
+                "bm25_rank": bm25_ranks.get(idx),
+                "dense_rank": dense_ranks.get(idx),
+                "hybrid_rank": hybrid_ranks.get(idx),
+                "final_rank": final_rank,
+                "fusion_score": round(float(fused.get(idx, 0.0)), 6),
+            }
+            if parts:
+                payload["rerank_components"] = {key: round(float(value), 6) for key, value in parts.items()}
+            return payload
+
+        started = time.perf_counter()
         if mode == "bm25":
             selected = [(idx, score) for idx, score in bm25_list if passes_hard_filters(self.products[idx], attributes)][:k]
             results = [
@@ -211,9 +258,11 @@ class SearchEngine:
                     rank,
                     score,
                     "bm25",
+                    include_debug=debug,
                     bm=score,
                     matched=attribute_match(self.products[idx], attributes)[1],
                     reason="lexical term match",
+                    debug_extra=extra(idx, rank),
                 )
                 for rank, (idx, score) in enumerate(selected, 1)
             ]
@@ -225,9 +274,11 @@ class SearchEngine:
                     rank,
                     score,
                     "dense",
+                    include_debug=debug,
                     dense=score,
                     matched=attribute_match(self.products[idx], attributes)[1],
                     reason="dense vector similarity",
+                    debug_extra=extra(idx, rank),
                 )
                 for rank, (idx, score) in enumerate(selected, 1)
             ]
@@ -239,14 +290,16 @@ class SearchEngine:
                     rank,
                     score,
                     "hybrid",
+                    include_debug=debug,
                     bm=bm25_scores.get(idx, 0),
                     dense=dense_scores.get(idx, 0),
                     matched=attribute_match(self.products[idx], attributes)[1],
                     reason="reciprocal-rank fusion",
+                    debug_extra=extra(idx, rank),
                 )
                 for rank, (idx, score) in enumerate(selected, 1)
             ]
-        else:
+        elif mode == "reranked":
             candidates = [idx for idx, _ in fused_list]
             reranked = rerank(
                 self.products,
@@ -259,7 +312,7 @@ class SearchEngine:
                 k,
             )
             results = []
-            for rank, (idx, score, matched, _parts) in enumerate(reranked, 1):
+            for rank, (idx, score, matched, parts) in enumerate(reranked, 1):
                 reason = "hybrid relevance"
                 if matched:
                     reason += " + " + ", ".join(matched[:3])
@@ -269,15 +322,20 @@ class SearchEngine:
                         rank,
                         score,
                         "reranked",
+                        include_debug=debug,
                         bm=bm25_scores.get(idx, 0),
                         dense=dense_scores.get(idx, 0),
                         rerank_score=score,
                         matched=matched,
                         reason=reason,
+                        debug_extra=extra(idx, rank, parts),
                     )
                 )
+        else:
+            raise ValueError("mode must be bm25, dense, hybrid or reranked")
+        timings["ranking"] = self._elapsed_ms(started)
+        timings["total"] = self._elapsed_ms(total_started)
 
-        latency = (time.perf_counter() - started) * 1000
         query_id = str(uuid.uuid4())
         payload = {
             "query_id": query_id,
@@ -289,36 +347,60 @@ class SearchEngine:
             "parsed_attributes": attributes,
             "mode": mode,
             "runtime_mode": self.mode,
-            "latency_ms": round(latency, 3),
+            "latency_ms": timings["total"],
             "ann_exact_fallback": ann_fallback,
             "results": results,
         }
-        self.debug[query_id] = payload
-        if len(self.debug) > 200:
-            self.debug.pop(next(iter(self.debug)))
+        if debug:
+            payload["timings_ms"] = timings
+            self.debug[query_id] = payload
+            if len(self.debug) > 200:
+                self.debug.pop(next(iter(self.debug)))
         return payload
 
-    def search_lab(self, query: str, k: int = 8):
-        return {mode: self.search_text(query, k=k, mode=mode) for mode in ["bm25", "dense", "hybrid", "reranked"]}
+    def search_lab(self, query: str, k: int = 8, debug: bool = False):
+        return {
+            mode: self.search_text(query, k=k, mode=mode, debug=debug)
+            for mode in ["bm25", "dense", "hybrid", "reranked"]
+        }
 
-    def search_image(self, image: Image.Image, k: int = 12):
+    def search_image(self, image: Image.Image, k: int = 12, debug: bool = False):
+        total_started = time.perf_counter()
         started = time.perf_counter()
         query_vector = self.visual.encode_pil(image)
+        embedding_ms = self._elapsed_ms(started)
+        started = time.perf_counter()
         rows, ann_fallback = self.image_ann.search(query_vector, k)
+        retrieval_ms = self._elapsed_ms(started)
         results = [
-            self._pack(idx, rank, score, "image", reason="visual embedding cosine similarity")
+            self._pack(
+                idx,
+                rank,
+                score,
+                "image",
+                include_debug=debug,
+                reason="visual embedding cosine similarity",
+                debug_extra={"final_rank": rank},
+            )
             for rank, (idx, score) in enumerate(rows, 1)
         ]
-        return {
+        payload = {
             "query_id": str(uuid.uuid4()),
             "mode": "image",
             "runtime_mode": self.mode,
             "visual_model": self.visual.name,
             "vector_index": self.image_index_backend,
             "ann_exact_fallback": ann_fallback,
-            "latency_ms": round((time.perf_counter() - started) * 1000, 3),
+            "latency_ms": self._elapsed_ms(total_started),
             "results": results,
         }
+        if debug:
+            payload["timings_ms"] = {
+                "image_embedding": embedding_ms,
+                "image_retrieval": retrieval_ms,
+                "total": payload["latency_ms"],
+            }
+        return payload
 
     def _multimodal_weights(self, has_text: bool) -> dict[str, float]:
         visual = float(os.getenv("FINDX_MM_VISUAL_WEIGHT", "0.50"))
@@ -339,26 +421,39 @@ class SearchEngine:
             "attribute": attribute / total,
         }
 
-    def search_multimodal(self, image: Image.Image, text: str = "", k: int = 12):
+    def search_multimodal(self, image: Image.Image, text: str = "", k: int = 12, debug: bool = False):
+        total_started = time.perf_counter()
+        timings: dict[str, float] = {}
+
         started = time.perf_counter()
         query_visual = self.visual.encode_pil(image)
+        timings["image_embedding"] = self._elapsed_ms(started)
+
+        started = time.perf_counter()
         visual_scores = self.image_vectors @ query_visual
+        timings["visual_scoring"] = self._elapsed_ms(started)
+
         normalized = self.normalizer.normalize(text or "similar")
         attributes = parse_attributes(normalized.corrected)
         anchor_idx = int(np.argmax(visual_scores))
         anchor_category = self.products[anchor_idx]["category"]
 
         text_scores: dict[str, float] = {}
+        started = time.perf_counter()
         if text.strip():
-            text_payload = self.search_text(text, k=len(self.products), mode="reranked")
+            text_payload = self.search_text(text, k=len(self.products), mode="reranked", debug=False)
             text_scores = {row["id"]: row["score"] for row in text_payload["results"]}
+        timings["text_retrieval"] = self._elapsed_ms(started)
         max_text = max(text_scores.values(), default=1.0)
 
         crossmodal_scores = np.zeros(len(self.products), dtype=np.float32)
+        started = time.perf_counter()
         if text.strip() and getattr(self.visual, "supports_text", False):
             clip_text_vector = self.visual.encode_text(normalized.corrected)
             crossmodal_scores = self.image_vectors @ clip_text_vector
+        timings["crossmodal_text_embedding_and_scoring"] = self._elapsed_ms(started)
 
+        started = time.perf_counter()
         weights = self._multimodal_weights(bool(text.strip()))
         rows = []
         for idx, product in enumerate(self.products):
@@ -388,25 +483,34 @@ class SearchEngine:
                 )
             )
         rows.sort(key=lambda row: (-row[1], self.products[row[0]]["price"]))
+        timings["fusion_and_ranking"] = self._elapsed_ms(started)
+
         results = []
         for rank, row in enumerate(rows[:k], 1):
             idx, score, matched, text_score, crossmodal_score, visual_score, attribute_score = row
-            packed = self._pack(
-                idx,
-                rank,
-                score,
-                "multimodal",
-                dense=text_score,
-                rerank_score=score,
-                matched=matched,
-                reason="weighted visual + textual + cross-modal + attribute fusion",
+            debug_extra = {
+                "final_rank": rank,
+                "visual_similarity": round(visual_score, 6),
+                "clip_text_image_similarity": round(crossmodal_score, 6),
+                "attribute_score": round(attribute_score, 6),
+            }
+            results.append(
+                self._pack(
+                    idx,
+                    rank,
+                    score,
+                    "multimodal",
+                    include_debug=debug,
+                    dense=text_score,
+                    rerank_score=score,
+                    matched=matched,
+                    reason="weighted visual + textual + cross-modal + attribute fusion",
+                    debug_extra=debug_extra,
+                )
             )
-            packed["debug"]["visual_similarity"] = round(visual_score, 6)
-            packed["debug"]["clip_text_image_similarity"] = round(crossmodal_score, 6)
-            packed["debug"]["attribute_score"] = round(attribute_score, 6)
-            results.append(packed)
 
-        return {
+        timings["total"] = self._elapsed_ms(total_started)
+        payload = {
             "query_id": str(uuid.uuid4()),
             "mode": "multimodal",
             "runtime_mode": self.mode,
@@ -416,15 +520,18 @@ class SearchEngine:
             "visual_model": self.visual.name,
             "reference_category": anchor_category,
             "fusion_weights": weights,
-            "latency_ms": round((time.perf_counter() - started) * 1000, 3),
+            "latency_ms": timings["total"],
             "results": results,
         }
+        if debug:
+            payload["timings_ms"] = timings
+        return payload
 
     def status(self):
         dense_vectors = getattr(self.dense, "vectors", np.empty(0, dtype=np.float32))
         dense_bytes = int(dense_vectors.nbytes)
         image_bytes = int(self.image_vectors.nbytes)
-        return {
+        output = {
             "runtime_label": "FULL ML" if self.mode == "full" else "LIGHTWEIGHT",
             "mode": self.mode,
             "index_version": self.index_version,
@@ -441,3 +548,19 @@ class SearchEngine:
             "startup_seconds": round(self.build_seconds, 3),
             "numeric_vector_bytes": dense_bytes + image_bytes,
         }
+        text_ann = getattr(self.dense, "ann", None)
+        if getattr(text_ann, "backend_name", "") == "faiss-hnsw-ip-v1":
+            output["text_hnsw"] = {
+                "m": text_ann.m,
+                "ef_construction": text_ann.ef_construction,
+                "ef_search": text_ann.ef_search,
+                "metric": "inner_product_on_l2_normalized_vectors",
+            }
+        if getattr(self.image_ann, "backend_name", "") == "faiss-hnsw-ip-v1":
+            output["image_hnsw"] = {
+                "m": self.image_ann.m,
+                "ef_construction": self.image_ann.ef_construction,
+                "ef_search": self.image_ann.ef_search,
+                "metric": "inner_product_on_l2_normalized_vectors",
+            }
+        return output

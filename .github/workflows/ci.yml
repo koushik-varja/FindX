@@ -7,10 +7,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: pip install -r backend/requirements.txt
-      - run: ruff check --select E9,F63,F7,F82 backend ml scripts tests
+      - run: pip install -r backend/requirements-eval.txt
+      - run: ruff check --select E9,F63,F7,F82 backend ml evaluation scripts tests
       - run: python scripts/check_format.py
       - run: pytest -q
+      - run: python scripts/build_golden_dataset.py
+      - run: python scripts/benchmark_retrieval.py --mode lightweight --output-dir /tmp/findx-evaluation --latency-repeats 1 --concurrency 2
       - run: alembic -c backend/alembic.ini upgrade head --sql > /tmp/findx-migration.sql
   frontend:
     runs-on: ubuntu-latest

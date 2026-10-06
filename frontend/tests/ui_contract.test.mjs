@@ -8,7 +8,7 @@ const read = (relative) => fs.readFileSync(new URL(`../src/${relative}`, import.
 test("text search UI submits the real text-search client", () => {
   const page = read("pages/SearchPage.tsx");
   const client = read("api/client.ts");
-  assert.match(page, /textSearch\(query\)/);
+  assert.match(page, /textSearch\(query,\s*debug\)/);
   assert.match(client, /\/api\/search\/text/);
   assert.match(client, /mode: "reranked"/);
 });
@@ -26,7 +26,7 @@ test("typo correction and parsed filters are rendered", () => {
 test("Search Lab renders all four backend ranking stages", () => {
   const page = read("pages/SearchLabPage.tsx");
   const utility = read("utils/presentation.ts");
-  assert.match(page, /searchLab\(query\)/);
+  assert.match(page, /searchLab\(query,\s*true\)/);
   for (const mode of ["bm25", "dense", "hybrid", "reranked"]) assert.ok(utility.includes(`"${mode}"`));
 });
 

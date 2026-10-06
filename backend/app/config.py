@@ -16,6 +16,7 @@ class Settings:
         if value.strip()
     ]
     test_schema_create = os.getenv("FINDX_TEST_CREATE_SCHEMA", "0") == "1"
+    expose_debug = os.getenv("FINDX_EXPOSE_DEBUG", "0") == "1"
 
 
 settings = Settings()
